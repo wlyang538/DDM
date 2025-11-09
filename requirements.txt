@@ -1,0 +1,7 @@
+transformers==4.44.0
+datasets==2.19.0
+torch==2.2.0
+numpy
+scikit-learn
+tqdm
+textattack
