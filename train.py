@@ -1,11 +1,9 @@
 # train.py
 """
-训练脚本（离线友好）用于训练 DDMClassifier，采用 插入式（insertion）mask 策略（CLS 后插入 M 个 [MASK]）。
+The training script (offline friendly) is used to train the DDMClassifier with the insertion mask strategy (M [masks] inserted after CLS).
+After training, the best model is stored in outputs/best_model/ and the token frequency statistics are stored in outputs/token_freq.json.
+The training and evaluation processes do not rely on online resources, and all models and data are loaded locally.
 
-关键变更点（相较上个版本）：
-- 在模型 forward 时传入 `apply_train_mask=True` 且 `insert_mode=True`，
-  使用 DDMClassifier.train_mask_inject_insert() 在训练时执行插入式 mask。
-- 其余逻辑（token freq 统计、离线数据加载、保存 checkpoint）保持不变。
 """
 
 import os
@@ -182,14 +180,14 @@ def train(args):
             labels = batch["label"].to(device)
 
             # -----------------------
-            # 训练时使用插入式 mask（论文风格）
+            # Use a plug-in mask during training
             # -----------------------
             out = model(input_ids=input_ids,
                         attention_mask=attention_mask,
                         labels=labels,
                         apply_train_mask=True,
                         train_mask_ratio=Config.mask_ratio,
-                        insert_mode=True)  # <-- 关键改动：insert_mode=True
+                        insert_mode=True)  # insert_mode=True
             loss = out["loss"]
             loss.backward()
             optimizer.step()

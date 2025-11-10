@@ -169,16 +169,16 @@ class DDMClassifier(nn.Module):
                                   suspicious_ratio: float = None,
                                   freq_dict: Optional[Dict[int, int]] = None):
         """
-        修改版：
-        - 不再插入 mask。
-        - 直接将 top_pos 上的可疑 token 替换成 [MASK]。
+        Identify top-K suspicious tokens based on frequency (from freq_dict or batch fallback),
+        and replace them with [MASK] tokens (insertion-style: insert after CLS, shift right, truncate).
+        Returns (new_input_ids, new_attention_mask)
         """
         suspicious_ratio = suspicious_ratio if suspicious_ratio is not None else Config.suspicious_ratio
         batch_size, seq_len = input_ids.size()
         new_input_ids = input_ids.clone()
         new_attention_mask = attention_mask.clone()
 
-        # 计算频率字典（batch 内或外部传入）
+        # Dictionary of computed frequencies (within or outside the batch)
         if freq_dict is None:
             flat = input_ids.view(-1).tolist()
             freq = {}
@@ -188,7 +188,7 @@ class DDMClassifier(nn.Module):
             freq = {int(k): int(v) for k, v in freq_dict.items()}
 
         for b in range(batch_size):
-            # 收集候选 token
+            # Collect candidate tokens
             candidates = []
             for i in range(seq_len):
                 tid = int(input_ids[b, i].item())
@@ -203,12 +203,12 @@ class DDMClassifier(nn.Module):
             if len(candidates) == 0:
                 continue
 
-            # 选出 top-K 可疑 token
+            # Select the top-K suspicious tokens
             candidates.sort(key=lambda x: x[1], reverse=True)
             k = max(1, int(len(candidates) * suspicious_ratio))
             top_pos = [pos for pos, _ in candidates[:k]]
 
-            # 直接将这些 token 替换成 [MASK]
+            # Just replace these tokens with [MASK]
             for p in top_pos:
                 new_input_ids[b, p] = self.mask_token_id
 
@@ -219,8 +219,8 @@ class DDMClassifier(nn.Module):
             # print(f"[Sample {b}] After masking:\n{text_after_mask}\n")
             with open("sample_after_mask.txt", "a", encoding="utf-8") as f:
                 f.write(f"[Sample {b}] After masking:\n{text_after_mask}\n\n")
-            # attention mask 不需要改，仍然沿用原 attention_mask
-            # 因为 [MASK] 应该被正常注意到
+            # The attention mask does not need to change. We will still use the original attention_mask
+            # Because [MASK] should be noticed normally
 
         return new_input_ids.to(input_ids.device), new_attention_mask.to(attention_mask.device)
 

@@ -10,6 +10,8 @@ class Config:
     data_root = os.path.join(base_dir, "data")
     sst2_path = os.path.join(data_root, "sst2")
     mr_path = os.path.join(data_root, "mr")
+    imdb_path = os.path.join(data_root, "imdb")
+    agnews_path = os.path.join(data_root, "ag_news")
     
     # output dir
     output_dir = os.path.join(base_dir, "outputs")
@@ -25,5 +27,4 @@ class Config:
 
     # ===== DDM parameters =====
     mask_ratio = 0.15  #  mask ratio when training
-    # mask_ratio = 0
     suspicious_ratio = 0.2  # mask ratio when inferencing

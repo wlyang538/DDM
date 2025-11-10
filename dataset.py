@@ -12,6 +12,7 @@ class DDMTextDataset:
             dataset_path = Config.sst2_path
         elif self.dataset_name == "mr":
             dataset_path = Config.mr_path
+        
         else:
             raise ValueError(f"Unsupported dataset: {dataset_name}")
 

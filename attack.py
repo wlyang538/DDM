@@ -4,9 +4,8 @@ Offline attack & evaluation utilities for DDM experiment.
 
 Features:
 - Load dataset from disk (original raw text) and the trained model (from outputs/best_model)
-- Two lightweight attack generators:
-  1) token_lowfreq_replacement_attack: replace some tokens by sampling from global low-frequency token pool
-  2) char_level_bug_attack: character-level corruptions (deletion / swap) inside selected words
+- Direct load of precomputed adversarial samples from json files:
+    - data/adv/{dataset}_{attack_mode}_adv.json
 - Evaluate model on clean/adversarial data with/without DDM inference-time masking
 - Compute metrics: CLA (clean acc), CAA (acc on adversarial), SUCC (attack success rate)
 - CLI to run different modes.
@@ -75,19 +74,20 @@ def load_adv_examples_by_mode(dataset_name: str,
                               attack_mode: str,
                               adv_path_arg: str = None) -> Tuple[List[str], List[int]]:
     """
-    通用的按 dataset + attack_mode 加载预先生成的对抗样本。
 
-    优先级（依次尝试）:
+    Load dataset_name + attack_mode specific adversarial examples from precomputed json files.
+
+    Priority order for file search:
       1) {dataset_name}_{attack_mode}_adv.json
       2) {dataset_name}_adv.json
-      3) adv_path_arg (如果传入)
-    JSON 期望格式:
+      3) adv_path_arg (if provided)
+    JSON format:
       [
         {"label": 1, "text": "it 's a tempt nad often affecting journey ."},
         {"label": 0, "text": "unflinchinglyy raw and heroic"},
         ...
       ]
-    返回 (texts, labels)
+    Return (texts, labels)
     """
     dataset_name = dataset_name.lower()
     attack_mode = attack_mode.lower() if attack_mode is not None else ""
@@ -231,7 +231,7 @@ def run_eval(args):
     # --- 选 split ---
     selected_split = None
 
-    # 如果用户显式要求 --test，就优先用 test split
+    # If user requirement, --test，use test split first if exists.
     if args.test and "test" in ds:
         selected_split = "test"
     else:
@@ -328,13 +328,13 @@ def run_eval(args):
     # Load adversarial samples (precomputed) for the chosen attack_mode
     # -------------------------
     if args.attack_mode == "load":
-        # 原来 load 模式让用户提供 adv_path（制式：label \t text），我们保留这条通道以兼容旧流程
+        # Originally, the load mode asked the user to provide adv_path (format: label \t text), but we kept this path to be compatible with the old flow
         if not args.adv_path:
             raise ValueError("adv_path required for load mode")
         adv_texts, adv_labels = load_adversarial_from_file(args.adv_path)
     else:
-        # 对于其它 mode，我们统一从预计算的 json 中加载：
-        # 尝试文件名： {dataset}_{attack_mode}_adv.json -> {dataset}_adv.json -> args.adv_path
+        # For all other modes, we always load them from the precomputed json：
+        # Try file name： {dataset}_{attack_mode}_adv.json -> {dataset}_adv.json -> args.adv_path
         adv_texts, adv_labels = load_adv_examples_by_mode(dataset_name=args.dataset,
                                                         attack_mode=args.attack_mode,
                                                         adv_path_arg=args.adv_path)
@@ -420,7 +420,7 @@ def load_adversarial_from_file(path: str) -> Tuple[List[str], List[int]]:
 # -------------------------
 if __name__ == "__main__":
     parser = argparse.ArgumentParser()
-    parser.add_argument("--dataset", type=str, default="sst2", help="sst2 or mr")
+    parser.add_argument("--dataset", type=str, default="sst2", help="sst2 or mr or other supported dataset")
     parser.add_argument("--model_dir", type=str, default=None, help="Path to saved model dir (if not provided, uses outputs/best_model)")
     parser.add_argument(
         "--attack_mode",

@@ -2,10 +2,10 @@
 """
 Main pipeline for DDM experiment (offline version).
 
-流程：
-1. 训练阶段：调用 train.py 的接口（或内部函数）训练模型，生成 best_model/ 与 token_freq.json；
-2. 攻击评估阶段：调用 attack.py 的函数，在 clean / adv (no defense) / adv (with DDM) 下评估；
-3. 输出最终指标表，并保存结果到 outputs/metrics.json。
+Process:
+1. train: call train.py's interface (or internal function) to train the model, generating best_model/ and token_freq.json.
+2. attack evaluation phase: call attack.py function and evaluate under clean/adv (no defense)/adv (with DDM);
+3. Output the final metrics table and save the results to outputs/metrics.json.
 """
 
 import os
@@ -20,7 +20,7 @@ from config import Config
 
 def main(args):
     print("========== [Stage 1] Training ==========")
-    # 训练模型
+    # Training phase
     train_args = argparse.Namespace(
         dataset=args.dataset,
         epochs=args.epochs,
@@ -46,7 +46,7 @@ def main(args):
         debug=False
     )
 
-    # 攻击评估
+    # Attack & Defense Evaluation phase
     run_eval(attack_args)
 
     print("\n========== [Pipeline Done] ==========")
@@ -61,8 +61,8 @@ if __name__ == "__main__":
     parser.add_argument("--log_interval", type=int, default=50)
     parser.add_argument("--force_recompute_freq", action="store_true")
 
-    # 攻击部分参数
-    parser.add_argument("--attack_mode", type=str, default="token_repl", choices=["token_repl", "char_bug", "load"])
+    # attack & defense eval args
+    parser.add_argument("--attack_mode", type=str, default="token_repl", choices=["textfooler", "deepwordbug", "pwws", "load", "token_repl"]) 
     parser.add_argument("--replace_ratio", type=float, default=0.2)
     parser.add_argument("--top_k_lowfreq", type=int, default=200)
     parser.add_argument("--suspicious_ratio", type=float, default=Config.suspicious_ratio)
